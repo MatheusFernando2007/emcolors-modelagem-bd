@@ -222,4 +222,9 @@ Como aprendizado, o grupo percebeu como é fácil modelar "no achismo" quando n�
 
 ## Referências Bibliográficas
 
-(inserir aqui as referências bibliográficas utilizadas pelo grupo, se houver — ex: material de aula, livros de modelagem de dados, documentação consultada)
+Este trabalho não se baseou em bibliografia externa. O conteúdo foi construído a partir de duas fontes principais:
+
+Pesquisa de campo: visita presencial e entrevista com o gerente da EMColors, que forneceu as informações sobre processos, regras de negócio, equipe e estoque utilizadas na modelagem.
+Apoio de Inteligência Artificial: uso do Claude (Anthropic) para organizar as respostas da entrevista em uma estrutura conceitual, conforme detalhado na seção "Uso de Inteligência Artificial".
+
+Site institucional consultado como evidência da organização: https://emcolors.com.br/
