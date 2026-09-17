@@ -1,6 +1,7 @@
 [README (1).md](https://github.com/user-attachments/files/32312554/README.1.md)
 # EMColors — Modelagem de Banco de Dados
-diogo mariano frnça da silva
+diogo mariano frança da silva
+
 Modelagem conceitual de banco de dados para a gráfica EMColors, desenvolvida como Entrega 1 (Modelo Conceitual / DER) do trabalho acadêmico.
 
 ---
