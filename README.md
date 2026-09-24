@@ -1,7 +1,9 @@
 [README (1).md](https://github.com/user-attachments/files/32312554/README.1.md)
 # EMColors — Modelagem de Banco de Dados
 Diogo Mariano França da Silva 
+
 Gabriel Rocha de Melo 
+
 Matheus Fernando Garcia de Oliveira 
 
 Modelagem conceitual de banco de dados para a gráfica EMColors, desenvolvida como Entrega 1 (Modelo Conceitual / DER) do trabalho acadêmico.
@@ -176,7 +178,8 @@ O fluxo observado na visita segue a sequência: o cliente solicita um orçamento
 
 ## Diagrama Entidade-Relacionamento (DER)
 
-<img width="1541" height="1020" alt="Diagrama de relacionamento" src="https://github.com/user-attachments/assets/058ddc88-6a85-4517-9fef-1e839207b752" />
+<img width="1600" height="780" alt="der-emcolors-chen-elipse (1)" src="https://github.com/user-attachments/assets/7a13f3a4-ae20-435f-8291-ae50d18b6670" />
+
 
 O diagrama representa as oito entidades identificadas, seus atributos, os relacionamentos entre elas e as respectivas cardinalidades, conforme detalhado na seção de Modelagem Conceitual.
 
