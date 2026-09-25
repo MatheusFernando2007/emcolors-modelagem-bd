@@ -178,7 +178,7 @@ O fluxo observado na visita segue a sequência: o cliente solicita um orçamento
 
 ## Diagrama Entidade-Relacionamento (DER)
 
-<img width="1600" height="780" alt="der-emcolors-chen-elipse (1)" src="https://github.com/user-attachments/assets/7a13f3a4-ae20-435f-8291-ae50d18b6670" />
+<img width="2400" height="1275" alt="der-emcolors-chen-losango" src="https://github.com/user-attachments/assets/6a179ee8-4f41-4235-9eb8-e5aa127d56a2" />
 
 
 O diagrama representa as oito entidades identificadas, seus atributos, os relacionamentos entre elas e as respectivas cardinalidades, conforme detalhado na seção de Modelagem Conceitual.
