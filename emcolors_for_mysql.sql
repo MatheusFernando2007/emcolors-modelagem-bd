@@ -1,3 +1,5 @@
+
+
 DROP DATABASE IF EXISTS emcolors;
 
 CREATE DATABASE emcolors
