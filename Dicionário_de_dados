@@ -1,0 +1,64 @@
+# Dicionário de Dados Conceitual (Preliminar)
+
+### Cliente
+
+| Atributo | Descrição | Regra de negócio associada |
+|---|---|---|
+| id_cliente | Identificador é o código exclusivo que representa aquele cliente dentro do sistema, servindo para diferenciá-lo dos demais mesmo que tenham nome ou telefone parecidos | Obrigatório |
+| nome | Nome é o dado que identifica quem é a pessoa (ou empresa) que fez o pedido, usado no atendimento e no contato direto com o cliente (ex: "João Silva") | Obrigatório |
+| telefone | Telefone é o número de contato do cliente, usado pela gráfica para avisar sobre o andamento do pedido, como quando ele fica pronto para retirada (ex: "(11) 90000-0000") | Obrigatório |
+
+### Pedido
+
+| Atributo | Descrição | Regra de negócio associada |
+|---|---|---|
+| id_pedido | Identificador é o código exclusivo que representa aquele pedido específico, permitindo acompanhar seu andamento desde o orçamento até a entrega | Obrigatório |
+| data_pedido | Data do pedido é o dia em que o cliente solicitou o orçamento pela primeira vez, usada como referência de quando o processo começou | Obrigatório |
+| prazo_entrega | Prazo de entrega é a data combinada em que o pedido deve estar pronto para ser entregue ou retirado pelo cliente | Varia conforme o pedido |
+| status | Status é a etapa em que o pedido se encontra dentro do fluxo de produção da gráfica, indicando se ele ainda está em orçamento, já foi aprovado, está em produção, está pronto ou já foi entregue | Obrigatório |
+| valor_total | Valor total é a soma de todos os itens que compõem o pedido, correspondente à quantia que o cliente aprovou e pagou no momento da aprovação do orçamento | Registrado na aprovação |
+
+### Item_Pedido
+
+| Atributo | Descrição | Regra de negócio associada |
+|---|---|---|
+| id_item | Identificador é o código exclusivo que representa cada item dentro de um pedido, permitindo que um mesmo pedido tenha mais de um produto diferente | Obrigatório |
+| quantidade_metros | Quantidade é o conjunto de valor que informa quantos metros daquele produto foram solicitados pelo cliente, usado para calcular o consumo de papel e o preço do item (ex: 1000) | Obrigatório, sempre em metros |
+
+### Produto
+
+| Atributo | Descrição | Regra de negócio associada |
+|---|---|---|
+| id_produto | Identificador é o código exclusivo que representa cada tipo de produto que a gráfica oferece | Obrigatório |
+| nome | Nome é o dado que indica qual tipo de item a gráfica produz, ou seja, o que está sendo fabricado naquele pedido (ex: "Adesivo", "Cartão", "Etiqueta") | Obrigatório |
+
+### Tipo_Papel
+
+| Atributo | Descrição | Regra de negócio associada |
+|---|---|---|
+| id_tipo_papel | Identificador é o código exclusivo que representa cada tipo de papel usado na produção | Obrigatório |
+| nome | Nome é o dado que indica qual material de papel será usado na fabricação do item, influenciando o custo e o acabamento do produto final (ex: "Couché", "Contracolado") | Obrigatório |
+
+### Funcionário
+
+| Atributo | Descrição | Regra de negócio associada |
+|---|---|---|
+| id_funcionario | Identificador é o código exclusivo que representa cada funcionário da gráfica | Obrigatório |
+| nome | Nome é o dado que identifica a pessoa que trabalha na gráfica (ex: "Carlos Souza") | Obrigatório |
+| cargo | Cargo é a função que o funcionário exerce dentro da gráfica, definindo qual responsabilidade ele tem no processo do pedido, como produzir ou fechar a entrega (ex: "Operador de máquina", "Expedicionista", "Gerente", "Administrativo") | Obrigatório |
+
+### Fornecedor
+
+| Atributo | Descrição | Regra de negócio associada |
+|---|---|---|
+| id_fornecedor | Identificador é o código exclusivo que representa cada empresa que fornece insumos para a gráfica | Obrigatório |
+| nome | Nome é o dado que identifica a empresa responsável por abastecer a gráfica com determinado insumo (ex: "Fornecedora XYZ Papéis") | Obrigatório |
+| tipo_insumo | Tipo de insumo é a categoria do material que aquele fornecedor entrega para a gráfica, como tinta, papel ou clichê | Cada fornecedor fornece apenas um tipo |
+
+### Insumo
+
+| Atributo | Descrição | Regra de negócio associada |
+|---|---|---|
+| id_insumo | Identificador é o código exclusivo que representa cada insumo utilizado na produção | Obrigatório |
+| nome | Nome é o dado que identifica o material usado na fabricação dos produtos da gráfica (ex: "Tinta CMYK", "Bobina de papel couché") | Obrigatório |
+| quantidade_estoque | Quantidade é o conjunto de valor que representa quanto daquele insumo existe fisicamente guardado no momento, usado para saber se há material suficiente antes de fechar um novo pedido | Hoje sem controle formal (problema identificado) |
