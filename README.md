@@ -6,7 +6,7 @@
 
 | Nome completo | RGM | Usuário do GitHub |
 |---|---|---|
-| Diogo Mariano França da Silva | 46875336 | Diogocopd  |
+| Diogo Mariano França da Silva | 46875336 | Diogocopd |
 | Gabriel Rocha de Melo | 47687479 | bielg3r |
 | Matheus Fernando Garcia de Oliveira | 46864075 | MatheusFernando2007 |
 
@@ -18,7 +18,7 @@ A gestão de pequenas empresas gráficas costuma acontecer no improviso: pedidos
 
 O problema que motivou este trabalho é concreto: a empresa apresenta dificuldades no controle de estoque de insumos, como tinta, papel e clichê, e não mantém um cadastro permanente de clientes após a conclusão dos pedidos. Na prática, isso significa que a gráfica pode identificar a falta de determinado material somente depois que um pedido já foi fechado, necessitando realizar compras emergenciais. Além disso, a ausência de um histórico persistente dificulta a identificação de clientes que já realizaram compras anteriormente.
 
-O objetivo deste projeto é desenvolver uma estrutura de banco de dados capaz de organizar as informações da EMColors, abrangendo clientes, funcionários, fornecedores, produtos, insumos, pedidos e os relacionamentos existentes entre esses elementos.
+O objetivo deste projeto é desenvolver uma estrutura de banco de dados capaz de organizar as informações da EMColors, abrangendo clientes, funcionários, fornecedores, tipos de produto, produtos, insumos, pedidos e os relacionamentos existentes entre esses elementos.
 
 A modelagem foi construída a partir de uma pesquisa de campo realizada por meio de visita e entrevista com o gerente da EMColors. Inicialmente, o trabalho concentrou-se no levantamento de requisitos, regras de negócio e desenvolvimento do Diagrama Entidade-Relacionamento (DER). Nesta segunda etapa, o projeto evolui para a conversão do modelo conceitual em modelo lógico, implementação SQL, análise de normalização e elaboração de consultas para apoiar a gestão da organização.
 
@@ -39,23 +39,23 @@ Para orientar o desenvolvimento do banco de dados, os problemas encontrados fora
 | P01 | Controle insuficiente do estoque de insumos. | Dificuldade para identificar a disponibilidade de materiais e possibilidade de compras emergenciais durante o atendimento dos pedidos. |
 | P02 | Ausência de cadastro permanente e histórico de clientes. | Dificuldade para consultar pedidos anteriores e identificar o relacionamento comercial com clientes recorrentes. |
 
-O banco de dados proposto busca atender aos dois problemas por meio da organização das informações de estoque e da manutenção dos registros de clientes e pedidos.
+O banco de dados proposto busca atender aos dois problemas por meio da organização das informações de estoque e da manutenção dos registros de clientes e pedidos. A seção 13 indica quais partes do script SQL atendem a cada problema.
 
 ## 2.2 Escopo do Sistema
 
 O sistema proposto contempla a organização das informações relacionadas aos principais processos operacionais identificados na EMColors:
 
 - Cadastro e identificação de clientes.
-- Registro de orçamentos e pedidos.
-- Associação de produtos aos pedidos.
-- Identificação dos funcionários envolvidos na produção e no fechamento dos pedidos.
-- Cadastro de produtos e tipos de materiais utilizados.
-- Cadastro de fornecedores e insumos.
+- Registro de orçamentos e pedidos, com a forma de entrega (entrega ou retirada).
+- Associação de produtos aos pedidos, com a quantidade de cada item.
+- Identificação do funcionário que atendeu e do funcionário que aprovou cada pedido.
+- Cadastro de produtos e de seus tipos (adesivo, cartão e etiqueta).
+- Cadastro de fornecedores e insumos, e relação entre os produtos e os insumos usados na fabricação.
 - Consulta das quantidades disponíveis em estoque.
 - Acompanhamento dos status dos pedidos.
 - Consulta do histórico de pedidos por cliente.
 
-O escopo está concentrado na gestão das informações relacionadas à operação da gráfica. A implementação deve representar os processos efetivamente identificados no levantamento de campo, sem incluir funcionalidades que não tenham relação com a realidade da organização.
+O escopo está concentrado na gestão das informações relacionadas à operação da gráfica. A implementação representa os processos efetivamente identificados no levantamento de campo, sem incluir funcionalidades que não tenham relação com a realidade da organização.
 
 # 3. Levantamento e Processos de Negócio
 
@@ -63,25 +63,31 @@ A pesquisa de campo permitiu identificar os principais processos realizados pela
 
 ## 3.1 Processos mapeados
 
-| Processo | Descrição |
-|---|---|
-| Solicitação de orçamento | O cliente solicita um orçamento para a produção de um ou mais produtos. Atualmente, essa etapa é realizada em papel. |
-| Aprovação do orçamento | O orçamento é aprovado juntamente com o pagamento, caracterizando uma única etapa no processo observado. |
-| Produção do pedido | Após a aprovação, o pedido é encaminhado para produção, sob responsabilidade de um operador de máquina. |
-| Finalização | Após a produção, o pedido passa a aguardar a entrega ou retirada. |
-| Entrega ou retirada | O pedido é entregue ao cliente ou retirado por ele, com fechamento realizado pelo expedicionista responsável. |
-| Controle de insumos | A gráfica utiliza tinta, papel/bobina e clichês na fabricação dos produtos. A ausência de controle formal do estoque foi identificada como uma dificuldade operacional. |
+Cada processo possui um código (PN), usado na seção 13 para indicar qual parte do script SQL o atende.
+
+| Código | Processo | Descrição | No banco de dados |
+|---|---|---|---|
+| PN01 | Solicitação de orçamento | O cliente solicita um orçamento para a produção de um ou mais produtos. Atualmente, essa etapa é realizada em papel. | O pedido é criado com status `orcamento`, ligado a um cliente, e seus itens ficam em `pedido_produto`. |
+| PN02 | Aprovação do orçamento | O orçamento é aprovado juntamente com o pagamento, caracterizando uma única etapa no processo observado. | O status passa a `aprovado`, com o funcionário aprovador e o valor total. Um trigger confere produtos, insumos e estoque. |
+| PN03 | Produção do pedido | Após a aprovação, o pedido é encaminhado para produção, sob responsabilidade de um operador de máquina. | Status `em_producao`. |
+| PN04 | Finalização | Após a produção, o pedido passa a aguardar a entrega ou retirada. | Status `pronto`. |
+| PN05 | Entrega ou retirada | O pedido é entregue ao cliente ou retirado por ele, com fechamento realizado pelo expedicionista responsável. | Status `entregue`; a forma de entrega (`entrega` ou `retirada`) fica em `pedido.forma_entrega`. |
+| PN06 | Controle de insumos | A gráfica utiliza tinta, papel/bobina e clichês na fabricação dos produtos. A ausência de controle formal do estoque foi identificada como uma dificuldade operacional. | `insumo.quantidade_estoque`, relação `produto_insumo`, view `vw_estoque_do_pedido` e consultas de estoque. |
 
 ## 3.2 Fluxo do processo de pedido
 
-O fluxo observado durante a visita segue a sequência:
+O fluxo observado durante a visita segue a sequência abaixo. A última coluna mostra o status correspondente no banco de dados.
 
-1. O cliente solicita um orçamento.
-2. O orçamento é elaborado e registrado em papel.
-3. O cliente aprova o orçamento e realiza o pagamento.
-4. O pedido é encaminhado para produção, sob responsabilidade de um operador de máquina.
-5. Após a produção, o pedido fica pronto.
-6. O expedicionista realiza o fechamento e a entrega ou retirada do pedido.
+| Etapa | Descrição | Processo | Status no banco |
+|---|---|---|---|
+| 1 | O cliente solicita um orçamento. | PN01 | — |
+| 2 | O orçamento é elaborado e registrado em papel. | PN01 | `orcamento` |
+| 3 | O cliente aprova o orçamento e realiza o pagamento. | PN02 | `aprovado` |
+| 4 | O pedido é encaminhado para produção, sob responsabilidade de um operador de máquina. | PN03 | `em_producao` |
+| 5 | Após a produção, o pedido fica pronto. | PN04 | `pronto` |
+| 6 | O expedicionista realiza o fechamento e a entrega ou retirada do pedido. | PN05 | `entregue` |
+
+O controle de insumos (PN06) acompanha todo o fluxo e é conferido no momento da aprovação.
 
 **Fluxograma do processo de pedido:**
 
@@ -113,89 +119,98 @@ O relatório completo do levantamento deve ser consultado no arquivo [Relatório
 
 # 4. Requisitos do Sistema
 
-Os requisitos foram organizados considerando os processos identificados durante a pesquisa de campo e as necessidades de gestão da EMColors.
+Os requisitos foram organizados considerando os processos identificados durante a pesquisa de campo e as necessidades de gestão da EMColors. Cada requisito possui um código, usado na seção 13 para indicar qual parte do script SQL o atende.
 
 ## 4.1 Requisitos Funcionais
 
 | Código | Requisito funcional |
 |---|---|
 | RF01 | O sistema deve permitir registrar um orçamento vinculado a um cliente. |
-| RF02 | O sistema deve permitir registrar a aprovação do orçamento junto com o pagamento. |
-| RF03 | O sistema deve permitir registrar um pedido com um ou mais itens, contendo produto, tipo de papel e quantidade em metros. |
-| RF04 | O sistema deve permitir atribuir um funcionário expedicionista responsável pelo fechamento do pedido. |
-| RF05 | O sistema deve permitir atribuir um operador de máquina responsável pela produção do pedido. |
-| RF06 | O sistema deve permitir consultar a quantidade disponível de insumos, como tinta, papel/bobina e clichê, antes do fechamento de um pedido. |
-| RF07 | O sistema deve permitir registrar insumos vinculados a fornecedores. |
-| RF08 | O sistema deve permitir atualizar o status do pedido, contemplando orçamento, aprovado, em produção, pronto e entregue. |
-| RF09 | O sistema deve manter os dados dos clientes após a conclusão dos pedidos. |
-| RF10 | O sistema deve permitir consultar os pedidos anteriores associados a determinado cliente. |
-| RF11 | O sistema deve permitir cadastrar produtos e suas respectivas classificações. |
-| RF12 | O sistema deve permitir relacionar os insumos utilizados na fabricação de cada produto. |
+| RF02 | O sistema deve permitir registrar o funcionário (gerente/vendedor) que atendeu o pedido. |
+| RF03 | O sistema deve permitir registrar um pedido com um ou mais itens, contendo o produto e a quantidade em metros. |
+| RF04 | O sistema deve permitir registrar a aprovação do orçamento, com o funcionário aprovador e o valor total, junto com o pagamento. |
+| RF05 | O sistema deve permitir atualizar o status do pedido, contemplando orçamento, aprovado, em produção, pronto e entregue. |
+| RF06 | O sistema deve permitir registrar se o pedido será entregue ao cliente ou retirado por ele. |
+| RF07 | O sistema deve permitir cadastrar produtos e suas respectivas classificações (tipos de produto). |
+| RF08 | O sistema deve permitir cadastrar fornecedores e registrar insumos vinculados a eles, com a quantidade em estoque. |
+| RF09 | O sistema deve permitir relacionar os insumos utilizados na fabricação de cada produto. |
+| RF10 | O sistema deve permitir consultar a quantidade disponível de insumos, inclusive os necessários para cada pedido, antes de aprová-lo. |
+| RF11 | O sistema deve impedir a aprovação de um pedido sem produtos, com produto sem insumo cadastrado ou com insumo sem estoque. |
+| RF12 | O sistema deve manter os dados dos clientes após a conclusão dos pedidos. |
+| RF13 | O sistema deve permitir consultar os pedidos anteriores associados a determinado cliente. |
+| RF14 | O sistema deve permitir consultar indicadores gerenciais, como pedidos por status, valores aprovados, produtos mais solicitados e pedidos por funcionário. |
+| RF15 | O sistema deve permitir identificar pendências de cadastro: produto sem insumo, fornecedor sem insumo e pedido sem item. |
 
 ## 4.2 Requisitos Não Funcionais
 
 | Código | Categoria | Requisito não funcional |
 |---|---|---|
-| RNF01 | Usabilidade | O sistema deve apresentar uma interface simples, considerando que a operação é realizada por funcionários sem perfil técnico especializado. |
-| RNF02 | Confiabilidade | O controle de estoque deve representar adequadamente as quantidades disponíveis de insumos. |
-| RNF03 | Desempenho | As consultas de estoque e o cadastro de pedidos devem apresentar respostas adequadas durante o atendimento ao cliente. |
-| RNF04 | Disponibilidade | O sistema deve estar acessível durante o horário de funcionamento da gráfica. |
-| RNF05 | Integridade | O banco de dados deve utilizar chaves primárias, chaves estrangeiras e restrições de integridade para evitar registros inconsistentes. |
-| RNF06 | Segurança | O acesso às informações deve respeitar as responsabilidades dos funcionários e preservar os dados armazenados. |
+| RNF01 | Confiabilidade | O controle de estoque deve representar adequadamente as quantidades disponíveis de insumos, sem permitir saldo negativo. |
+| RNF02 | Desempenho | As consultas de pedidos por status e por data devem apresentar respostas adequadas durante o atendimento ao cliente. |
+| RNF03 | Integridade | O banco de dados deve utilizar chaves primárias, chaves estrangeiras, restrições de integridade e triggers para evitar registros inconsistentes. |
+| RNF04 | Compatibilidade | O script deve ser executado por inteiro no MySQL 8.0.16 ou superior, com codificação `utf8mb4`. |
 
 # 5. Regras de Negócio
 
-As regras de negócio representam as condições identificadas no funcionamento da EMColors e orientam a estruturação do banco de dados.
+As regras de negócio representam as condições identificadas no funcionamento da EMColors e as regras que o banco de dados aplica automaticamente. Cada regra possui um código (RN), usado na seção 13.
 
 ## 5.1 Regras operacionais
 
 | Código | Regra |
 |---|---|
-| RN01 | Um pedido pode conter um ou mais itens, cada um associado a um produto, tipo de papel e quantidade em metros. |
-| RN02 | A aprovação do orçamento ocorre junto com o pagamento, caracterizando uma única etapa no processo observado. |
-| RN03 | Cada pedido possui um único operador responsável pela produção e um único expedicionista responsável pelo fechamento. |
-| RN04 | Cada fornecedor está associado a apenas um tipo de insumo, conforme o levantamento realizado. |
-| RN05 | Os pedidos devem possuir um status que represente sua etapa no processo operacional. |
-| RN06 | Os dados dos clientes devem ser mantidos para permitir consultas de pedidos anteriores. |
-| RN07 | Os insumos utilizados na produção devem possuir quantidades de estoque registradas. |
+| RN01 | Um pedido pode conter um ou mais itens. Cada item liga o pedido a um produto, com a quantidade em metros, e o mesmo produto não pode aparecer duas vezes no mesmo pedido. |
+| RN02 | A quantidade de cada item deve ser maior que zero. |
+| RN03 | Todo pedido nasce como orçamento (status `orcamento`). |
+| RN04 | O status do pedido segue a ordem `orcamento` → `aprovado` → `em_producao` → `pronto` → `entregue`, avançando uma etapa por vez e sem voltar. |
+| RN05 | A aprovação do orçamento ocorre junto com o pagamento, em uma única etapa. Todo pedido já aprovado possui funcionário aprovador e valor total (maior ou igual a zero). |
+| RN06 | Um pedido sem produtos não pode ser aprovado. |
+| RN07 | Um pedido com produto sem insumo cadastrado não pode ser aprovado, pois o estoque não pode ser conferido. |
+| RN08 | Um pedido cujos produtos usam algum insumo sem estoque (quantidade igual ou menor que zero) não pode ser aprovado. |
+| RN09 | Os itens de um pedido só podem ser incluídos, alterados ou removidos enquanto o pedido estiver em orçamento. |
+| RN10 | Somente pedidos em orçamento podem ser excluídos. |
+| RN11 | Cada insumo pertence a um único fornecedor e possui quantidade em estoque registrada, que nunca é negativa (o valor inicial é zero). |
+| RN12 | Cada produto pertence a um único tipo de produto (adesivo, cartão ou etiqueta); os insumos de cada produto são registrados na relação entre produto e insumo. |
+| RN13 | Cliente, funcionário, fornecedor, tipo de produto, produto, insumo e pedido não podem ser excluídos enquanto outros registros dependerem deles; assim, o histórico dos clientes e dos pedidos é preservado. |
+| RN14 | Nomes (e telefones, quando existem) são obrigatórios e não podem ficar em branco; nomes de tipo de produto, produto e insumo não se repetem; o cargo do funcionário é Gerente, Administrativo, Operador de máquina ou Expedicionista; a forma de entrega é `entrega` ou `retirada`. |
 
 ## 5.2 Restrições e políticas organizacionais
 
-- Atualmente, não há verificação formal de estoque no fechamento do pedido, o que pode gerar compras emergenciais. Essa situação foi identificada como um dos problemas centrais da organização.
-- Os dados dos clientes não são mantidos após a entrega, o que impede a consulta de um histórico de pedidos no processo atual.
+- Hoje, a EMColors não faz verificação formal de estoque no fechamento do pedido, o que pode gerar compras emergenciais. Essa situação foi identificada como um dos problemas centrais da organização (P01). No banco de dados proposto, a verificação acontece na aprovação do orçamento (RN06 a RN08).
+- Os dados dos clientes não são mantidos após a entrega, o que impede a consulta de um histórico de pedidos no processo atual (P02). No banco de dados proposto, clientes e pedidos são mantidos (RN13).
 - O prazo de entrega varia conforme o pedido e não segue um padrão fixo.
-- Cada pedido possui um operador responsável pela produção e um expedicionista responsável pelo fechamento.
+- Cada fornecedor fornece apenas um tipo de insumo (tinta, papel/bobina ou clichê), conforme o levantamento realizado. No banco de dados, cada insumo possui um único fornecedor (RN11).
 
-**Importante:** as regras representam o processo observado e as necessidades identificadas. A implementação de mecanismos de controle, como alertas de estoque mínimo ou bloqueios de pedidos sem disponibilidade de insumos, deve ser validada com a organização antes de ser considerada uma regra operacional vigente.
+**Importante:** as regras RN06 a RN08 (bloqueio da aprovação por falta de estoque) são uma proposta deste projeto para resolver o problema P01. Elas não existem hoje na rotina da EMColors.
 
 # 6. Revisão do Modelo Conceitual
 
-O modelo conceitual foi desenvolvido com base nos dados levantados durante a visita à EMColors. Para a Entrega 2, sua revisão considera a necessidade de manter a correspondência entre os processos, requisitos, regras de negócio, modelo lógico e implementação SQL.
+O modelo conceitual foi desenvolvido com base nos dados levantados durante a visita à EMColors. Nesta entrega, ele foi conferido com o script SQL (`emcolors.sql`), que é a referência para as entidades, os relacionamentos e as regras descritos a seguir.
 
 ## 6.1 Entidades reconhecidas
 
-| Entidade | Descrição |
-|---|---|
-| Cliente | Pessoa ou empresa que solicita o orçamento e realiza o pedido. |
-| Pedido | Registro central do processo, desde o orçamento até a entrega. |
-| Item_Pedido | Entidade associativa que representa cada produto solicitado dentro de um pedido. |
-| Produto | Tipo de item produzido pela gráfica, como adesivo, cartão ou etiqueta. |
-| Tipo_Papel | Tipo de papel utilizado na produção dos itens. |
-| Funcionário | Representa os colaboradores da EMColors e seus diferentes cargos. |
-| Fornecedor | Empresa responsável pelo fornecimento de insumos. |
-| Insumo | Material utilizado na produção, como tinta, papel/bobina e clichê. |
+| Entidade | Tabela | Descrição |
+|---|---|---|
+| Cliente | `cliente` | Pessoa ou empresa que solicita o orçamento e realiza o pedido. |
+| Funcionário | `funcionario` | Colaboradores da EMColors e seus cargos: Gerente, Administrativo, Operador de máquina e Expedicionista. |
+| Fornecedor | `fornecedor` | Empresa responsável pelo fornecimento de insumos. |
+| Tipo de produto | `tipo_produto` | Classificação dos produtos: adesivo, cartão e etiqueta. |
+| Produto | `produto` | Item produzido pela gráfica, por exemplo adesivo couchê, cartão de visita e etiqueta contracolado. |
+| Insumo | `insumo` | Material utilizado na produção, como tinta, papel/bobina e clichê, com a quantidade em estoque. |
+| Pedido | `pedido` | Registro central do processo, desde o orçamento até a entrega. |
+| Item do pedido (associativa) | `pedido_produto` | Cada produto solicitado dentro de um pedido, com a quantidade em metros. |
+| Insumos do produto (associativa) | `produto_insumo` | Insumos utilizados na fabricação de cada produto. |
 
 ## 6.2 Relacionamentos pertinentes
 
 | Relacionamento | Cardinalidade | Descrição |
 |---|---|---|
-| Cliente — Pedido | 1:N | Um cliente pode possuir vários pedidos. |
-| Funcionário — Pedido | 1:N | Um funcionário pode atuar como expedicionista em vários pedidos. |
-| Funcionário — Pedido | 1:N | Um funcionário pode atuar como operador em vários pedidos. |
-| Pedido — Item_Pedido | 1:N | Um pedido pode conter vários itens. |
-| Produto — Item_Pedido | 1:N | Um produto pode aparecer em diferentes itens de pedidos. |
-| Tipo_Papel — Item_Pedido | 1:N | Um tipo de papel pode ser utilizado em diferentes itens. |
-| Fornecedor — Insumo | 1:N | Um fornecedor pode estar associado a diferentes insumos. |
+| Cliente — Pedido | 1:N | Um cliente pode possuir vários pedidos; todo pedido pertence a um cliente. |
+| Funcionário — Pedido (atendimento) | 1:N | Um funcionário pode atender vários pedidos; todo pedido registra o funcionário que o atendeu (gerente/vendedor). |
+| Funcionário — Pedido (aprovação) | 1:N | Um funcionário pode aprovar vários pedidos; o aprovador é registrado quando o pedido deixa de ser orçamento. |
+| Pedido — Produto | N:N | Um pedido pode conter vários produtos e um produto pode estar em vários pedidos, por meio de `pedido_produto`, que guarda a quantidade. |
+| Produto — Insumo | N:N | Um produto usa vários insumos e um insumo pode ser usado em vários produtos, por meio de `produto_insumo`. |
+| Fornecedor — Insumo | 1:N | Um fornecedor pode fornecer diferentes insumos; cada insumo possui um único fornecedor. |
+| Tipo de produto — Produto | 1:N | Um tipo de produto classifica vários produtos; cada produto possui um único tipo. |
 
 ## 6.3 Diagrama Entidade-Relacionamento (DER)
 
@@ -205,73 +220,49 @@ O DER representa as entidades identificadas, seus atributos, relacionamentos e c
 
 **Software utilizado:** modelo elaborado com apoio do brModelo e dos recursos de modelagem utilizados pelo grupo. Confirmar a ferramenta efetivamente utilizada para a versão final do diagrama.
 
-## 6.4 Ajustes e compatibilidade do modelo
-
-Durante a análise da implementação SQL, foram identificadas diferenças entre o modelo conceitual e a estrutura física atual.
-
-| Elemento | Modelo conceitual | Implementação SQL atual | Ajuste necessário |
-|---|---|---|---|
-| Funcionários no pedido | Operador e expedicionista | Gerente/vendedor e aprovador | Revisar as referências de funcionários para representar os responsáveis definidos no processo. |
-| Tipo de papel | Entidade `Tipo_Papel` | Não existe tabela correspondente | Definir sua inclusão na estrutura relacional. |
-| Item do pedido | Produto, tipo de papel e quantidade em metros | Produto e quantidade_produto | Avaliar a inclusão do tipo de papel e confirmar a unidade da quantidade. |
-| Relação produto-insumo | Associação entre produtos e insumos | Tabela associativa `produto_insumo` | Avaliar a inclusão da quantidade de insumo necessária por produto. |
-| Estoque | Quantidade disponível de insumos | Campo `quantidade_estoque` na tabela `insumo` | Avaliar o registro de entradas e saídas de estoque e a definição de estoque mínimo. |
-
-Esses ajustes devem ser realizados no modelo lógico e no script SQL para garantir que a implementação represente corretamente os processos levantados.
-
 # 7. Conversão do Modelo Conceitual para o Modelo Lógico
 
 A conversão do modelo conceitual para o modelo lógico consiste em transformar as entidades em tabelas relacionais, seus atributos em colunas e os relacionamentos em referências por meio de chaves primárias e estrangeiras.
 
-A estrutura SQL atual utiliza as seguintes tabelas:
+O script SQL cria as seguintes tabelas:
 
-| Tabela | Origem conceitual ou finalidade |
+| Tabela | Origem conceitual |
 |---|---|
-| `cliente` | Armazena os dados dos clientes. |
-| `funcionario` | Armazena os funcionários e seus cargos. |
-| `fornecedor` | Armazena os fornecedores de insumos. |
-| `tipo_produto` | Classifica os tipos de produtos. |
-| `produto` | Armazena os produtos fabricados pela gráfica. |
-| `insumo` | Armazena os insumos e suas quantidades em estoque. |
-| `pedido` | Registra os pedidos, datas, formas de entrega, status e valores. |
-| `pedido_produto` | Relaciona os produtos aos pedidos. |
-| `produto_insumo` | Relaciona os produtos aos insumos utilizados na produção. |
+| `cliente` | Entidade Cliente: dados dos clientes. |
+| `funcionario` | Entidade Funcionário: funcionários e seus cargos. |
+| `fornecedor` | Entidade Fornecedor: fornecedores de insumos. |
+| `tipo_produto` | Entidade Tipo de produto: classificação dos produtos. |
+| `produto` | Entidade Produto: produtos fabricados pela gráfica. |
+| `insumo` | Entidade Insumo: insumos e suas quantidades em estoque. |
+| `pedido` | Entidade Pedido: datas, formas de entrega, status e valores. |
+| `pedido_produto` | Associação Pedido — Produto: itens do pedido e suas quantidades. |
+| `produto_insumo` | Associação Produto — Insumo: insumos utilizados na produção. |
 
 ## 7.1 Conversão de entidades em tabelas
 
-As entidades independentes foram transformadas em tabelas específicas, mantendo seus identificadores como chaves primárias.
+As entidades independentes (cliente, funcionário, fornecedor, tipo de produto, produto, insumo e pedido) foram transformadas em tabelas específicas, mantendo seus identificadores como chaves primárias numéricas (`INT` com `AUTO_INCREMENT`).
 
-A entidade associativa `Item_Pedido` foi representada na implementação atual pela tabela `pedido_produto`, que utiliza uma chave primária composta por `id_pedido` e `id_produto`.
+Os relacionamentos muitos-para-muitos foram transformados em tabelas associativas com chave primária composta: `pedido_produto`, formada por `id_pedido` e `id_produto`, que guarda a quantidade de cada item; e `produto_insumo`, formada por `id_produto` e `id_insumo`.
 
-O relacionamento entre produtos e insumos foi representado pela tabela `produto_insumo`, também com chave primária composta.
-
-A entidade conceitual `Tipo_Papel`, entretanto, ainda não possui tabela correspondente na implementação atual e precisa ser considerada na revisão do modelo lógico.
+O tipo de papel (couchê ou contracolado) não possui tabela própria: ele é identificado pelo nome do produto e do insumo.
 
 ## 7.2 Conversão dos relacionamentos
 
 | Relacionamento conceitual | Representação relacional |
 |---|---|
-| Cliente 1:N Pedido | Chave estrangeira `id_cliente` em `pedido`. |
+| Cliente 1:N Pedido | Chave estrangeira `id_cliente` em `pedido` (`fk_pedido_cliente`). |
+| Funcionário 1:N Pedido (atendimento) | Chave estrangeira `id_funcionario_gerente_vendedor` em `pedido` (`fk_pedido_vendedor`), obrigatória. |
+| Funcionário 1:N Pedido (aprovação) | Chave estrangeira `id_funcionario_aprovador` em `pedido` (`fk_pedido_aprovador`), opcional: fica vazia enquanto o pedido é orçamento. |
 | Pedido N:N Produto | Tabela associativa `pedido_produto`. |
 | Produto N:N Insumo | Tabela associativa `produto_insumo`. |
-| Fornecedor 1:N Insumo | Chave estrangeira `id_fornecedor` em `insumo`. |
-| Funcionário 1:N Pedido | Referências à tabela `funcionario` na tabela `pedido`, atualmente com os campos de gerente/vendedor e aprovador. |
-
-A representação dos funcionários precisa ser revisada para corresponder às funções de operador e expedicionista descritas no modelo conceitual.
-
-## 7.3 Modelo Lógico Relacional
-
-O modelo lógico definitivo deverá apresentar todas as tabelas, colunas, tipos de dados, chaves primárias, chaves estrangeiras e cardinalidades convertidas.
-
-**Arquivo do modelo lógico:** a inserir após a elaboração e validação do diagrama no brModelo.
-
-<!-- Inserir aqui o link do modelo lógico definitivo. -->
+| Fornecedor 1:N Insumo | Chave estrangeira `id_fornecedor` em `insumo` (`fk_insumo_fornecedor`). |
+| Tipo de produto 1:N Produto | Chave estrangeira `id_tipo_produto` em `produto` (`fk_produto_tipo`). |
 
 # 8. Definição de Chaves Primárias e Estrangeiras
 
 As chaves primárias identificam exclusivamente cada registro das tabelas. As chaves estrangeiras estabelecem os relacionamentos entre as tabelas e garantem a integridade referencial.
 
-A tabela abaixo descreve as chaves presentes na implementação SQL atual.
+As tabelas abaixo descrevem as chaves presentes no script SQL.
 
 ## 8.1 Chaves Primárias
 
@@ -289,31 +280,31 @@ A tabela abaixo descreve as chaves presentes na implementação SQL atual.
 
 ## 8.2 Chaves Estrangeiras
 
-| Tabela de origem | Coluna | Tabela referenciada |
-|---|---|---|
-| `produto` | `id_tipo_produto` | `tipo_produto` |
-| `insumo` | `id_fornecedor` | `fornecedor` |
-| `pedido` | `id_cliente` | `cliente` |
-| `pedido` | `id_funcionario_gerente_vendedor` | `funcionario` |
-| `pedido` | `id_funcionario_aprovador` | `funcionario` |
-| `pedido_produto` | `id_pedido` | `pedido` |
-| `pedido_produto` | `id_produto` | `produto` |
-| `produto_insumo` | `id_produto` | `produto` |
-| `produto_insumo` | `id_insumo` | `insumo` |
+| Tabela de origem | Coluna | Tabela referenciada | Restrição | `ON DELETE` / `ON UPDATE` |
+|---|---|---|---|---|
+| `produto` | `id_tipo_produto` | `tipo_produto` | `fk_produto_tipo` | `RESTRICT` / `CASCADE` |
+| `insumo` | `id_fornecedor` | `fornecedor` | `fk_insumo_fornecedor` | `RESTRICT` / `CASCADE` |
+| `pedido` | `id_cliente` | `cliente` | `fk_pedido_cliente` | `RESTRICT` / `CASCADE` |
+| `pedido` | `id_funcionario_gerente_vendedor` | `funcionario` | `fk_pedido_vendedor` | `RESTRICT` / `CASCADE` |
+| `pedido` | `id_funcionario_aprovador` | `funcionario` | `fk_pedido_aprovador` | `RESTRICT` / `RESTRICT` |
+| `pedido_produto` | `id_pedido` | `pedido` | `fk_pedido_produto_pedido` | `RESTRICT` / `CASCADE` |
+| `pedido_produto` | `id_produto` | `produto` | `fk_pedido_produto_produto` | `RESTRICT` / `CASCADE` |
+| `produto_insumo` | `id_produto` | `produto` | `fk_produto_insumo_produto` | `RESTRICT` / `CASCADE` |
+| `produto_insumo` | `id_insumo` | `insumo` | `fk_produto_insumo_insumo` | `RESTRICT` / `CASCADE` |
 
-**Observação:** as chaves listadas correspondem ao script SQL atual. A relação de chaves deverá ser atualizada depois da revisão do modelo lógico, especialmente em relação a operador, expedicionista e tipo de papel.
+**Observação:** a chave `fk_pedido_aprovador` usa `ON UPDATE RESTRICT` porque a coluna `id_funcionario_aprovador` também é usada em um `CHECK`. No MySQL 8, essa combinação com `ON UPDATE CASCADE` gera o erro 3823.
 
 # 9. Processo de Normalização
 
 A normalização tem como finalidade organizar as informações em estruturas relacionais, reduzindo redundâncias e evitando anomalias de inserção, atualização e exclusão.
 
-A análise a seguir considera a organização das tabelas atualmente implementadas no script SQL.
+A análise a seguir considera a organização das tabelas implementadas no script SQL.
 
 ## 9.1 Primeira Forma Normal (1FN)
 
 A Primeira Forma Normal estabelece que cada coluna deve armazenar valores atômicos, sem grupos repetitivos ou listas de valores em uma única célula.
 
-Na implementação, os dados de clientes, funcionários, fornecedores, produtos, insumos e pedidos estão separados em tabelas próprias.
+Na implementação, os dados de clientes, funcionários, fornecedores, tipos de produto, produtos, insumos e pedidos estão separados em tabelas próprias.
 
 Os produtos associados aos pedidos são armazenados na tabela `pedido_produto`, enquanto os insumos associados aos produtos são armazenados na tabela `produto_insumo`.
 
@@ -323,11 +314,9 @@ Essa separação evita armazenar vários produtos ou insumos em uma única colun
 
 A Segunda Forma Normal exige que a tabela esteja na 1FN e que todos os atributos não-chave dependam integralmente da chave primária.
 
-Na estrutura atual, as tabelas associativas `pedido_produto` e `produto_insumo` utilizam chaves primárias compostas.
+As tabelas associativas `pedido_produto` e `produto_insumo` utilizam chaves primárias compostas. A tabela `pedido_produto` utiliza a combinação de `id_pedido` e `id_produto`, e seu único atributo não-chave, `quantidade_produto`, depende da combinação completa das duas colunas, pois representa a quantidade de um produto em um pedido específico. A tabela `produto_insumo` utiliza `id_produto` e `id_insumo` e não possui atributos não-chave.
 
-A tabela `pedido_produto` utiliza a combinação de `id_pedido` e `id_produto`. A tabela `produto_insumo` utiliza `id_produto` e `id_insumo`.
-
-Como essas tabelas não possuem outros atributos não-chave na implementação atual, não há dependências parciais desses atributos a serem eliminadas.
+As demais tabelas possuem chave primária de uma única coluna, portanto não há dependências parciais.
 
 ## 9.3 Terceira Forma Normal (3FN)
 
@@ -335,9 +324,9 @@ A Terceira Forma Normal exige que a tabela esteja na 2FN e que seus atributos n�
 
 A estrutura separa informações de clientes, funcionários, fornecedores, produtos, tipos de produtos e insumos em tabelas específicas.
 
-Por exemplo, os dados do fornecedor não são repetidos diretamente na tabela `insumo`. Em vez disso, a tabela utiliza `id_fornecedor` como chave estrangeira.
+Por exemplo, os dados do fornecedor não são repetidos diretamente na tabela `insumo`. Em vez disso, a tabela utiliza `id_fornecedor` como chave estrangeira. Da mesma forma, a tabela `pedido` guarda apenas os identificadores do cliente e dos funcionários que atendem e aprovam o pedido, sem repetir seus nomes ou cargos.
 
-Da mesma forma, a classificação do produto é mantida na tabela `tipo_produto`, sendo referenciada pela tabela `produto`.
+A classificação do produto é mantida na tabela `tipo_produto`, sendo referenciada pela tabela `produto`.
 
 Essa organização reduz a repetição de informações e facilita a manutenção dos registros.
 
@@ -345,9 +334,7 @@ Essa organização reduz a repetição de informações e facilita a manutençã
 
 A estrutura atual apresenta separação de entidades e relacionamentos compatível com os princípios das três formas normais.
 
-Entretanto, a validação definitiva depende da revisão do modelo lógico, da definição dos atributos que ainda serão adicionados e da análise das dependências funcionais.
-
-A inclusão de atributos como quantidade consumida de insumos, tipo de papel e identificação dos responsáveis deverá ser analisada para evitar dependências inadequadas e repetição de dados.
+O valor total do pedido (`valor_total`) é informado no momento da aprovação e não é calculado a partir de outras colunas do banco, portanto não cria dependência transitiva.
 
 # 10. Justificativas Técnicas das Decisões
 
@@ -355,7 +342,7 @@ A inclusão de atributos como quantidade consumida de insumos, tipo de papel e i
 
 A separação entre as tabelas `cliente` e `pedido` permite que um mesmo cliente possua vários pedidos associados ao seu identificador.
 
-Essa decisão contribui diretamente para solucionar a ausência de histórico de clientes identificada durante a pesquisa de campo.
+Essa decisão contribui diretamente para solucionar a ausência de histórico de clientes identificada durante a pesquisa de campo (P02).
 
 ## 10.2 Utilização de Tabelas Associativas
 
@@ -373,33 +360,41 @@ Essa separação facilita a manutenção das classificações e a realização d
 
 ## 10.4 Utilização de Tipos de Dados Específicos
 
-Foram utilizados tipos de dados como `INT`, `VARCHAR`, `DATE`, `DECIMAL` e `ENUM`, de acordo com a natureza das informações armazenadas.
+Foram utilizados tipos de dados como `INT`, `VARCHAR`, `DATE` e `DECIMAL`, de acordo com a natureza das informações armazenadas. Os identificadores são `INT` com `AUTO_INCREMENT`.
 
-O tipo `DECIMAL` é utilizado para valores monetários e quantidades numéricas que podem exigir casas decimais. O tipo `DATE` armazena as datas dos pedidos.
+O tipo `DECIMAL` é utilizado para valores monetários (`valor_total`) e para quantidades que podem exigir casas decimais (`quantidade_estoque` e `quantidade_produto`). O tipo `DATE` armazena as datas dos pedidos.
 
-O tipo `ENUM` é utilizado em campos como cargo, status e forma de entrega, restringindo os valores possíveis a opções previamente definidas.
+Campos com valores fixos, como cargo, status e forma de entrega, são `VARCHAR` com uma restrição `CHECK ... IN (...)`, que limita os valores às opções previamente definidas.
 
 ## 10.5 Integridade Referencial
 
-As chaves estrangeiras garantem que os relacionamentos entre as tabelas façam referência a registros existentes.
+As chaves estrangeiras garantem que os relacionamentos entre as tabelas façam referência a registros existentes. Todas usam `ON DELETE RESTRICT`, o que impede excluir um registro que ainda é usado por outro, e `ON UPDATE CASCADE`, exceto `fk_pedido_aprovador`, que usa `ON UPDATE RESTRICT` (seção 8.2).
 
 As restrições de integridade também contribuem para evitar valores inválidos, como quantidades negativas de estoque e quantidades não positivas nos itens dos pedidos.
 
 ## 10.6 Restrições Implementadas
 
-O script atual utiliza restrições como:
+O script utiliza restrições como:
 
 | Restrição | Aplicação |
 |---|---|
 | `PRIMARY KEY` | Identificação exclusiva dos registros. |
 | `FOREIGN KEY` | Integridade dos relacionamentos entre tabelas. |
 | `NOT NULL` | Impede a ausência de valores em campos obrigatórios. |
-| `UNIQUE` | Evita duplicidade de determinados valores, como nomes de produtos e tipos de produtos. |
-| `CHECK` | Impede valores inválidos em quantidades e valores monetários. |
-| `DEFAULT` | Define valores iniciais quando não é informado outro valor, como o estoque inicial e o status do pedido. |
-| `ENUM` | Restringe determinados campos a valores previamente definidos. |
+| `UNIQUE` | Evita duplicidade de nomes em `tipo_produto`, `produto` e `insumo`. |
+| `CHECK` | Impede nomes e telefones em branco, cargos e formas de entrega fora da lista, status inválido, `valor_total` negativo, estoque negativo, quantidade de item menor ou igual a zero e pedido aprovado sem aprovador ou sem valor total. |
+| `DEFAULT` | Define valores iniciais: estoque zero em `insumo.quantidade_estoque` e status `orcamento` em `pedido.status`. |
+| `AUTO_INCREMENT` | Gera os identificadores das tabelas principais. |
+| `TRIGGER` | Aplica regras automáticas sobre os pedidos e seus itens (seção 13.4). |
 
-As restrições específicas de cada coluna devem ser detalhadas no Dicionário de Dados.
+O detalhamento por coluna fica no Dicionário de Dados (seção 15).
+
+## 10.7 Simplificações adotadas
+
+- **Tipo de papel:** não possui tabela própria. O tipo de papel (couchê ou contracolado) aparece no nome do produto e no nome do insumo.
+- **Itens do pedido:** são representados pela tabela `pedido_produto`, com chave primária composta, sem uma tabela de item separada.
+- **Funcionários no pedido:** o pedido registra quem atendeu (`id_funcionario_gerente_vendedor`) e quem aprovou (`id_funcionario_aprovador`). Operadores de máquina e expedicionistas são cadastrados como funcionários, mas não são vinculados ao pedido.
+- **Estoque:** o saldo atual fica em `insumo.quantidade_estoque`. Não há baixa automática, registro de entradas e saídas, estoque mínimo nem quantidade de insumo por produto, e a aprovação do pedido apenas verifica se o saldo de cada insumo é maior que zero.
 
 # 11. Estratégia de Business Intelligence e Análise Gerencial
 
@@ -409,18 +404,18 @@ A proposta de análise gerencial utiliza consultas SQL para transformar os regis
 
 ## 11.1 Indicadores de Desempenho (KPIs)
 
-Os indicadores propostos estão relacionados aos problemas identificados durante a pesquisa de campo e às informações atualmente armazenadas no banco de dados.
+Os indicadores propostos estão relacionados aos problemas identificados durante a pesquisa de campo e às informações armazenadas no banco de dados.
 
 | Código | Indicador | Objetivo | Dados necessários |
 |---|---|---|---|
-| KPI01 | Quantidade de pedidos por período | Acompanhar o volume de pedidos realizados. | `pedido.data_pedido` |
-| KPI02 | Valor total dos pedidos por período | Acompanhar os valores registrados nos pedidos. | `pedido.valor_total`, `pedido.status` e `pedido.data_pedido` |
+| KPI01 | Pedidos aprovados por mês | Acompanhar o volume mensal de pedidos aprovados. | `pedido.data_pedido` e `pedido.status` |
+| KPI02 | Faturamento aprovado por mês | Acompanhar os valores dos pedidos aprovados e o valor médio por pedido. | `pedido.valor_total`, `pedido.status` e `pedido.data_pedido` |
 | KPI03 | Produtos mais solicitados | Identificar os produtos com maior demanda. | `pedido_produto` e `produto` |
 | KPI04 | Clientes recorrentes | Identificar clientes que realizam mais de um pedido. | `cliente` e `pedido` |
 | KPI05 | Distribuição de pedidos por status | Acompanhar a quantidade de pedidos em cada etapa. | `pedido.status` |
 | KPI06 | Quantidade disponível de insumos | Acompanhar os níveis atuais de estoque. | `insumo.quantidade_estoque` |
 
-**Observação:** os indicadores são propostas de análise. Sua utilização como KPIs definitivos depende da implementação e validação das consultas correspondentes no script SQL.
+**Observação:** cada indicador é calculado por consultas do script SQL, indicadas na seção 11.5.
 
 ## 11.2 Relação entre Problemas e Indicadores
 
@@ -435,7 +430,7 @@ A estrutura de dados proposta pode servir como base para relatórios e painéis 
 
 Entre as possibilidades estão:
 
-- Relatórios de pedidos realizados por período.
+- Relatórios de pedidos aprovados por mês.
 - Acompanhamento do valor total registrado em pedidos.
 - Identificação dos produtos com maior procura.
 - Consulta de clientes com maior frequência de pedidos.
@@ -460,114 +455,182 @@ Essas aplicações representam possibilidades futuras. Não estão implementadas
 
 ## 11.5 Tabela de Rastreabilidade
 
-A tabela abaixo relaciona os problemas e indicadores às tabelas que fornecem os dados necessários e às consultas gerenciais que deverão ser implementadas no script SQL.
+A tabela abaixo relaciona os problemas e indicadores às tabelas que fornecem os dados necessários e às consultas do script SQL que os calculam. Os números das consultas seguem a numeração dos comentários do script (seção 6 do arquivo).
 
-| Problema ou KPI | Tabelas envolvidas | Consulta prevista |
+| Problema ou KPI | Tabelas envolvidas | Consultas no script |
 |---|---|---|
-| P01 — Controle insuficiente de estoque | `insumo` | G06 |
-| P02 — Ausência de histórico de clientes | `cliente`, `pedido` | G04 |
-| KPI01 — Quantidade de pedidos por período | `pedido` | G01 |
-| KPI02 — Valor total dos pedidos por período | `pedido` | G02 |
-| KPI03 — Produtos mais solicitados | `pedido_produto`, `produto` | G03 |
-| KPI04 — Clientes recorrentes | `cliente`, `pedido` | G04 |
-| KPI05 — Pedidos por status | `pedido` | G05 |
-| KPI06 — Quantidade disponível de insumos | `insumo` | G06 |
-
-**Importante:** os códigos G01 a G06 representam a organização proposta para as consultas. Eles somente poderão ser considerados concluídos depois que as consultas correspondentes forem implementadas, testadas e incluídas no script SQL.
+| P01 — Controle insuficiente de estoque | `insumo`, `produto_insumo`, `pedido_produto`, `fornecedor` | 6.3, 6.4, 6.5, 6.13 e 6.25 (e view `vw_estoque_do_pedido`) |
+| P02 — Ausência de histórico de clientes | `cliente`, `pedido` | 6.1, 6.8, 6.9 e 6.26 (e view `vw_pedidos`) |
+| KPI01 — Pedidos aprovados por mês | `pedido` | 6.20 |
+| KPI02 — Faturamento aprovado por mês | `pedido` | 6.20 |
+| KPI03 — Produtos mais solicitados | `pedido_produto`, `produto`, `tipo_produto` | 6.11 e 6.12 |
+| KPI04 — Clientes recorrentes | `cliente`, `pedido` | 6.8, 6.10 e 6.26 |
+| KPI05 — Pedidos por status | `pedido` | 6.6 e 6.22 |
+| KPI06 — Quantidade disponível de insumos | `insumo` | 6.13 |
 
 # 12. Modelo Lógico Relacional
 
-O modelo lógico representa a estrutura relacional do banco de dados, apresentando tabelas, atributos, tipos de dados, chaves primárias, chaves estrangeiras e cardinalidades.
+O modelo lógico representa a estrutura relacional do banco de dados: as 9 tabelas, seus atributos, tipos de dados, chaves primárias, chaves estrangeiras e cardinalidades. As tabelas e as chaves estão descritas nas seções 7 e 8, e as colunas e os tipos de dados, no Dicionário de Dados (seção 15).
 
 O diagrama deve ser desenvolvido no brModelo, seguindo a notação exigida para o modelo lógico.
 
-O modelo lógico definitivo deverá refletir as decisões tomadas na revisão conceitual, especialmente:
+**Arquivo do modelo lógico:** a inserir após a elaboração e validação do diagrama no brModelo.
 
-- Representação dos funcionários responsáveis pela produção e pelo fechamento dos pedidos.
-- Inclusão ou justificativa da ausência da entidade `Tipo_Papel`.
-- Definição da unidade de medida dos itens dos pedidos.
-- Representação da quantidade de insumos consumida por produto, caso seja validada pelo grupo.
-- Coerência entre as tabelas associativas e os relacionamentos do DER.
-
-**Arquivo:** inserir o link do diagrama lógico após sua elaboração e validação.
+<!-- Inserir aqui o link do modelo lógico definitivo. -->
 
 # 13. Implementação SQL
 
-A implementação física do banco de dados foi desenvolvida utilizando o Sistema Gerenciador de Banco de Dados MySQL.
+A implementação física do banco de dados foi desenvolvida no MySQL 8 (recomendado 8.0.16 ou superior, para que as restrições `CHECK` sejam aplicadas). O script `emcolors.sql` cria o banco `emcolors` com codificação `utf8mb4`.
 
-O script atual contempla a criação do banco de dados, criação das tabelas, definição de chaves primárias e estrangeiras, restrições de integridade e inserção de dados fictícios para testes.
+**Atenção:** o script apaga e recria as tabelas do banco `emcolors`. Ele deve ser executado inteiro, de uma só vez, em uma conexão MySQL, pois os comandos `DELIMITER` usados na criação dos triggers impedem a execução de trechos isolados.
 
-## 13.1 Estrutura implementada
+## 13.1 Estrutura do script
 
-| Tabela | Responsabilidade |
-|---|---|
-| `cliente` | Cadastro dos clientes. |
-| `funcionario` | Cadastro dos funcionários e cargos. |
-| `fornecedor` | Cadastro dos fornecedores. |
-| `tipo_produto` | Classificação dos produtos. |
-| `produto` | Cadastro dos produtos fabricados. |
-| `insumo` | Cadastro e controle da quantidade atual de insumos. |
-| `pedido` | Registro dos pedidos e seus dados principais. |
-| `pedido_produto` | Associação entre pedidos e produtos. |
-| `produto_insumo` | Associação entre produtos e insumos. |
-
-## 13.2 Recursos SQL utilizados
-
-A implementação atual utiliza:
-
-- `CREATE DATABASE` para criação do banco de dados.
-- `CREATE TABLE` para criação das tabelas.
-- `PRIMARY KEY` para definição das chaves primárias.
-- `FOREIGN KEY` para definição dos relacionamentos.
-- `NOT NULL`, `UNIQUE`, `CHECK` e `DEFAULT` para restrições de integridade.
-- `INSERT INTO` para inserção dos dados fictícios.
-- `SELECT` para consulta e visualização dos registros.
-
-## 13.3 Operações e consultas previstas para a entrega
-
-De acordo com os requisitos da Entrega 2, o script deverá contemplar também:
-
-| Recurso | Finalidade | Situação |
+| Bloco | Conteúdo | Códigos |
 |---|---|---|
-| `SELECT` com `JOIN` | Consultar informações relacionadas entre diferentes tabelas. | A implementar. |
-| `UPDATE` | Atualizar registros existentes. | A implementar. |
-| `DELETE` | Remover registros de teste ou registros permitidos pelas regras de integridade. | A implementar. |
-| Consultas gerenciais G01–G06 | Responder às perguntas gerenciais e calcular os indicadores propostos. | A implementar. |
-| Consultas de auditoria A01+ | Verificar regras de negócio e consistência dos dados. | A implementar. |
+| 1. Limpeza | `DROP ... IF EXISTS` de views, triggers e tabelas, para que o script possa ser executado mais de uma vez. | RNF04 |
+| 2. Tabelas | 9 tabelas (`InnoDB`, `utf8mb4`) e 2 índices. | RNF03, RNF04 |
+| 3. Triggers | 6 triggers com as regras automáticas dos pedidos e de seus itens. | RNF03 |
+| 4. Views | 4 views (consultas salvas). | — |
+| 5. Dados de exemplo | `INSERT` dos cadastros e dos pedidos, e `UPDATE` que aprova e avança alguns pedidos. | — |
+| 6. Consultas SELECT | 26 consultas de relatórios e verificações, numeradas de 6.1 a 6.26. | — |
 
-## 13.4 Consultas de Auditoria Propostas
+## 13.2 Rastreabilidade entre o script e os códigos
 
-As consultas de auditoria devem verificar a consistência dos dados e a aplicação das regras de negócio.
+As tabelas das seções 13.3 a 13.7 mostram quais códigos cada parte do script atende:
 
-| Código | Verificação | Regra relacionada |
+| Prefixo | Significado | Onde está definido |
 |---|---|---|
-| A01 | Verificar se existem pedidos sem cliente associado. | RN05 e integridade referencial. |
-| A02 | Verificar se existem pedidos sem itens associados. | RN01. |
-| A03 | Verificar se existem registros de estoque com quantidade negativa. | RN07. |
-| A04 | Verificar se existem pedidos aprovados sem valor total registrado. | RN02. |
-| A05 | Verificar se os funcionários relacionados aos pedidos possuem os cargos compatíveis com suas responsabilidades. | RN03. |
+| P | Problema identificado | Seção 2.1 |
+| PN | Processo mapeado | Seção 3.1 |
+| RF | Requisito funcional | Seção 4.1 |
+| RNF | Requisito não funcional | Seção 4.2 |
+| RN | Regra de negócio | Seção 5.1 |
 
-As consultas devem ser implementadas e testadas no MySQL antes de serem consideradas concluídas.
+No arquivo `emcolors.sql`, cada parte do script traz comentários `CODIGOS` e `RESOLVE` com esses mesmos códigos. Para achar as partes que atendem a um código, basta procurá-lo no arquivo (por exemplo, `RN08`).
 
-## 13.5 Arquivo do Script SQL
+## 13.3 Tabelas e índices
+
+| Tabela | Responsabilidade | Códigos |
+|---|---|---|
+| `cliente` | Cadastro dos clientes (nome e telefone). | PN01, RF01, RF12, RN13, RN14, P02 |
+| `funcionario` | Cadastro dos funcionários e cargos. | PN01, PN02, RF02, RF04, RN14 |
+| `fornecedor` | Cadastro dos fornecedores (nome e telefone). | PN06, RF08, RN11, RN14 |
+| `tipo_produto` | Classificação dos produtos. | RF07, RN12, RN14 |
+| `produto` | Cadastro dos produtos fabricados, cada um com seu tipo. | RF07, RN12, RN14 |
+| `insumo` | Cadastro dos insumos, com fornecedor e quantidade atual em estoque. | PN06, RF08, RNF01, RN11, RN14, P01 |
+| `pedido` | Registro dos pedidos: data, forma de entrega, status, valor total, cliente, funcionário que atendeu e funcionário que aprovou. | PN01, PN02, PN03, PN04, PN05, RF01, RF02, RF04, RF05, RF06, RN03, RN04, RN05, RN13, RN14, P02 |
+| `pedido_produto` | Itens do pedido: produto e quantidade em metros. | PN01, RF03, RN01, RN02, RN13 |
+| `produto_insumo` | Insumos usados na fabricação de cada produto. | PN06, RF09, RN12, RN13 |
+
+| Índice | Colunas | Códigos |
+|---|---|---|
+| `idx_pedido_status_data` | `pedido (status, data_pedido)` | RNF02 |
+| `idx_pedido_data` | `pedido (data_pedido)` | RNF02 |
+
+## 13.4 Triggers
+
+| Trigger | Quando dispara | O que faz | Códigos |
+|---|---|---|---|
+| `trg_pedido_nasce_orcamento` | Antes de inserir em `pedido` | Impede criar um pedido com status diferente de `orcamento`. | PN01, RF01, RN03 |
+| `trg_pedido_validar_atualizacao` | Antes de atualizar `pedido` | Valida a mudança de status e a aprovação do pedido (blocos detalhados abaixo). | PN02, PN03, PN04, PN05, RF05, RF11, RN04, RN06, RN07, RN08, P01 |
+| `trg_pedido_so_apaga_orcamento` | Antes de excluir de `pedido` | Só permite excluir pedidos em orçamento. | RN10, P02 |
+| `trg_itens_so_em_orcamento_insert` | Antes de inserir em `pedido_produto` | Só permite incluir item se o pedido estiver em orçamento. | PN01, RF03, RN09 |
+| `trg_itens_so_em_orcamento_update` | Antes de atualizar `pedido_produto` | Só permite alterar item se o pedido estiver em orçamento. | PN01, RF03, RN09 |
+| `trg_itens_so_em_orcamento_delete` | Antes de excluir de `pedido_produto` | Só permite remover item se o pedido estiver em orçamento. | PN01, RF03, RN09 |
+
+O trigger `trg_pedido_validar_atualizacao` concentra a validação em um único trigger, para não depender da ordem de execução de dois triggers `BEFORE UPDATE`. Ele é dividido em quatro blocos:
+
+| Bloco | Verificação | Códigos |
+|---|---|---|
+| 1. Fluxo de status | Aceita apenas `orcamento` → `aprovado` → `em_producao` → `pronto` → `entregue`, uma etapa por vez. | PN02, PN03, PN04, PN05, RF05, RN04 |
+| 2. Pedido sem produtos | Na aprovação, exige pelo menos um item em `pedido_produto`. | PN02, RF11, RN06 |
+| 3. Produto sem insumo | Na aprovação, exige que todo produto do pedido tenha insumo em `produto_insumo`. | PN02, PN06, RF11, RN07 |
+| 4. Insumo sem estoque | Na aprovação, bloqueia o pedido se algum insumo dos seus produtos tiver `quantidade_estoque` menor ou igual a zero. | PN02, PN06, RF11, RN08, P01 |
+
+A exigência de funcionário aprovador e de valor total em pedidos aprovados (RN05) é garantida pela restrição `ck_aprovado_exige_aprovador_e_valor`, na tabela `pedido`.
+
+## 13.5 Views
+
+| View | O que mostra | Códigos |
+|---|---|---|
+| `vw_pedidos` | Pedidos com cliente, telefone, funcionário que atendeu e aprovador. | RF02, RF04, RF05, RF13, P02 |
+| `vw_itens_pedido` | Itens de cada pedido, com cliente, status, tipo de produto, produto e quantidade. | RF03, RF13 |
+| `vw_estoque_do_pedido` | Insumos usados em cada pedido, com fornecedor, saldo e situação (`SEM ESTOQUE` ou `DISPONIVEL`). | PN06, RF10, P01 |
+| `vw_pendencias` | Produtos sem insumo, fornecedores sem insumo e pedidos sem item. | RF15, RN06, RN07 |
+
+## 13.6 Dados de exemplo
+
+| Trecho do script | O que faz | Códigos |
+|---|---|---|
+| `INSERT` de `cliente`, `funcionario`, `fornecedor`, `tipo_produto`, `produto`, `insumo` e `produto_insumo` | Cadastros iniciais. | PN06, RF07, RF08, RF09 |
+| `INSERT` de `pedido` e `pedido_produto` | 6 pedidos em orçamento e seus 8 itens. | PN01, RF01, RF02, RF03, RF06, RN03 |
+| `UPDATE` dos pedidos 1 a 4 | Aprova os pedidos, informando aprovador e valor total. | PN02, RF04, RF11, RN05 |
+| `UPDATE` de status | Avança os pedidos 1, 2 e 3 para `em_producao`, os pedidos 1 e 2 para `pronto` e o pedido 1 para `entregue`. | PN03, PN04, PN05, RF05, RN04 |
+
+## 13.7 Consultas SELECT
+
+| Consulta | O que responde | Códigos |
+|---|---|---|
+| 6.1 | Lista geral de pedidos, com cliente, status, valor, funcionário que atendeu e aprovador (usa `vw_pedidos`). | RF05, RF13, P02 |
+| 6.2 | Produtos de um pedido específico (exemplo: pedido 4). | PN01, RF03 |
+| 6.3 | Confere os insumos dos pedidos em orçamento: com saldo, sem saldo e produtos sem insumo. | PN02, PN06, RF10, RN07, RN08, P01 |
+| 6.4 | Detalha estoque e fornecedor dos insumos dos pedidos em orçamento, com diagnóstico. | PN06, RF10, RN08, P01 |
+| 6.5 | Lista os insumos sem estoque nos pedidos em orçamento. | PN06, RF10, RN08, P01 |
+| 6.6 | Quantidade e valor dos pedidos por status. | RF05, RF14 |
+| 6.7 | Pedidos ainda não entregues e dias desde a data do pedido. | PN03, PN04, PN05, RF05 |
+| 6.8 | Histórico e valor aprovado por cliente. | RF13, P02 |
+| 6.9 | Clientes que ainda não fizeram pedidos. | RF12, RF13, P02 |
+| 6.10 | Dez clientes com maior valor em pedidos aprovados. | RF14 |
+| 6.11 | Produtos mais solicitados. | RF14 |
+| 6.12 | Pedidos e quantidades por tipo de produto. | RF07, RF14 |
+| 6.13 | Situação atual dos insumos, com fornecedor e telefone. | PN06, RF08, RF10, P01 |
+| 6.14 | Quantidade de insumos por fornecedor. | PN06, RF08 |
+| 6.15 | Fornecedores sem insumos cadastrados. | RF08, RF15 |
+| 6.16 | Insumos utilizados por produto. | PN06, RF09 |
+| 6.17 | Produtos sem insumos cadastrados. | RF09, RF15, RN07 |
+| 6.18 | Pedidos atendidos por funcionário. | RF02, RF14 |
+| 6.19 | Pedidos aprovados por funcionário aprovador. | RF04, RF14 |
+| 6.20 | Resumo mensal dos pedidos aprovados: quantidade, faturamento e valor médio. | RF14 |
+| 6.21 | Pedidos por forma de entrega. | PN05, RF06 |
+| 6.22 | Painel geral de pedidos por status e valor aprovado. | RF05, RF14 |
+| 6.23 | Pendências encontradas pelas views (usa `vw_pendencias`). | RF15 |
+| 6.24 | Itens de todos os pedidos (usa `vw_itens_pedido`). | RF03 |
+| 6.25 | Estoque dos insumos ligados aos pedidos (usa `vw_estoque_do_pedido`). | PN06, RF10, P01 |
+| 6.26 | Último pedido e total de pedidos por cliente. | RF13, P02 |
+
+## 13.8 Comandos SQL utilizados
+
+O script utiliza:
+
+- `CREATE DATABASE`, `USE` e `SET NAMES`, para criar e selecionar o banco.
+- `DROP VIEW`, `DROP TRIGGER` e `DROP TABLE`, sempre com `IF EXISTS`.
+- `CREATE TABLE`, com `PRIMARY KEY`, `FOREIGN KEY`, `NOT NULL`, `UNIQUE`, `CHECK`, `DEFAULT` e `AUTO_INCREMENT`.
+- `CREATE INDEX`.
+- `CREATE TRIGGER` (`BEFORE INSERT`, `BEFORE UPDATE` e `BEFORE DELETE`), com `DELIMITER`, `IF ... THEN`, `EXISTS` e `SIGNAL SQLSTATE`.
+- `CREATE VIEW`, com `JOIN`, `LEFT JOIN`, `UNION ALL` e `CASE`.
+- `INSERT INTO` e `UPDATE`, para os dados de exemplo e para a aprovação e o avanço de status dos pedidos.
+- `SELECT` com `JOIN`, `LEFT JOIN`, `WHERE`, `GROUP BY`, `ORDER BY` e `LIMIT`, e funções como `COUNT`, `SUM`, `AVG`, `MAX`, `COALESCE`, `CASE`, `GROUP_CONCAT`, `DATE_FORMAT`, `DATEDIFF` e `FIELD`.
+
+O script não traz um comando `DELETE` de exemplo. A exclusão de registros é controlada pelos triggers (RN09 e RN10) e pelas chaves estrangeiras com `ON DELETE RESTRICT` (RN13).
+
+## 13.9 Arquivo do Script SQL
 
 O script de implementação está disponível no repositório:
 
-[**emcolors_for_mysql.sql — Script SQL**](./emcolors_for_mysql.sql)
+[**emcolors.sql — Script SQL**](./emcolors.sql)
 
-O arquivo deverá ser atualizado para refletir a versão definitiva do modelo lógico e conter todas as operações e consultas exigidas na Entrega 2.
+O arquivo reúne a criação do banco, das tabelas, dos triggers e das views, os dados de exemplo e as consultas descritas nesta seção.
 
 # 14. Massa de Dados
 
-A massa de dados utilizada no projeto deve ser fictícia, preservando a privacidade de clientes, funcionários e fornecedores da organização.
+A massa de dados utilizada no projeto é fictícia, preservando a privacidade de clientes, funcionários e fornecedores da organização.
 
-O contexto levantado informa que a EMColors atende aproximadamente de 5 a 8 pedidos por dia. Esse volume deve ser considerado como referência para construir uma massa de dados representativa da operação da gráfica.
+## 14.1 Dados cadastrados
 
-## 14.1 Dados atualmente cadastrados
+O script `emcolors.sql` insere os seguintes registros de exemplo:
 
-A implementação SQL atual contém os seguintes registros de exemplo:
-
-| Tabela | Quantidade atual de registros |
+| Tabela | Quantidade de registros |
 |---|---:|
 | `cliente` | 6 |
 | `funcionario` | 6 |
@@ -576,35 +639,29 @@ A implementação SQL atual contém os seguintes registros de exemplo:
 | `produto` | 5 |
 | `insumo` | 4 |
 | `pedido` | 6 |
-| `pedido_produto` | 7 |
+| `pedido_produto` | 8 |
 | `produto_insumo` | 15 |
 
-## 14.2 Justificativa e evolução da massa de dados
+Depois dos `UPDATE` do script, os seis pedidos ficam nos seguintes status: `entregue` (1), `pronto` (1), `em_producao` (1), `aprovado` (1) e `orcamento` (2).
 
-A massa atual é inicial e permite verificar os relacionamentos básicos entre as tabelas. Entretanto, o volume de pedidos ainda é pequeno quando comparado à operação informada durante a pesquisa de campo.
+## 14.2 Justificativa da massa de dados
 
-Considerando a média de 5 a 8 pedidos por dia, será necessário ampliar os registros para contemplar diferentes períodos e situações operacionais.
+O contexto levantado informa que a EMColors atende, em média, de 5 a 8 pedidos por dia. A massa de exemplo é bem menor que esse volume: ela serve para demonstrar os relacionamentos, as regras automáticas e as consultas, e não para reproduzir a operação diária.
 
-A ampliação deverá considerar:
+Mesmo sendo pequena, a massa cobre:
 
-- Clientes que realizaram vários pedidos.
-- Clientes cadastrados que ainda não possuem pedidos.
-- Pedidos em diferentes etapas do processo.
+- Um cliente com mais de um pedido e um cliente cadastrado que ainda não fez pedidos.
+- Pedidos em todas as etapas do processo, do orçamento à entrega.
 - Pedidos concluídos e pedidos ainda em andamento.
-- Diferentes formas de entrega.
+- As duas formas de entrega (`entrega` e `retirada`).
 - Produtos com diferentes níveis de procura.
 - Insumos com quantidades variadas em estoque.
-- Registros distribuídos em diferentes períodos.
-
-A quantidade definitiva de registros deverá ser coerente com o volume de operação da EMColors, evitando tanto uma quantidade insuficiente para as consultas quanto uma massa artificialmente grande.
 
 ## 14.3 Integridade da Massa de Dados
 
-Todos os registros devem respeitar os relacionamentos e as restrições definidas no banco de dados.
+Todos os registros respeitam os relacionamentos e as restrições definidas no banco de dados: os pedidos referenciam clientes e funcionários existentes, os itens referenciam pedidos e produtos existentes e os insumos estão associados a fornecedores cadastrados.
 
-Os pedidos devem referenciar clientes existentes, os itens devem referenciar pedidos e produtos existentes e os insumos devem estar associados a fornecedores cadastrados.
-
-Os dados devem permitir que as consultas gerenciais e de auditoria apresentem resultados úteis para a demonstração do sistema.
+Como a massa de exemplo não tem insumo sem estoque, fornecedor sem insumo, produto sem insumo nem pedido sem item, as consultas de verificação 6.5, 6.15, 6.17 e 6.23 não retornam linhas.
 
 # 15. Dicionário de Dados
 
@@ -612,7 +669,7 @@ O dicionário de dados documenta a estrutura do banco de dados, descrevendo cada
 
 O dicionário conceitual preliminar desenvolvido na Entrega 1 serviu como referência para a identificação dos atributos e suas finalidades.
 
-Para a Entrega 2, será necessário atualizar esse documento com a estrutura física definitiva, contemplando:
+Para a Entrega 2, será necessário atualizar esse documento com a estrutura física do script `emcolors.sql`, contemplando:
 
 - Nome da tabela.
 - Nome de cada coluna.
@@ -621,7 +678,7 @@ Para a Entrega 2, será necessário atualizar esse documento com a estrutura fí
 - Chave primária ou estrangeira.
 - Obrigatoriedade (`NOT NULL`).
 - Unicidade (`UNIQUE`).
-- Valores permitidos (`ENUM` ou `CHECK`).
+- Valores permitidos (`CHECK`).
 - Valor padrão (`DEFAULT`).
 - Relacionamentos e referências.
 
@@ -640,41 +697,11 @@ O repositório reúne a documentação, os diagramas, o levantamento de campo e 
 | Arquivo ou pasta | Descrição |
 |---|---|
 | `README.md` | Relatório técnico principal do projeto. |
-| `emcolors_for_mysql.sql` | Script SQL atual do banco de dados. |
+| `emcolors.sql` | Script SQL do banco de dados (MySQL 8). |
 | `relatório da entrevista.md` | Documento com o registro do levantamento realizado. |
 | `img/` | Pasta destinada aos materiais visuais do projeto. |
 
-## 16.2 Organização prevista para a entrega final
-
-Para facilitar a avaliação e a localização dos documentos, recomenda-se organizar o repositório da seguinte maneira:
-
-```text
-emcolors-modelagem-bd/
-│
-├── README.md
-│
-├── img/
-│   ├── der_conceitual.png
-│   ├── modelo_logico.png
-│   └── fluxograma_pedido.png
-│
-├── docs/
-│   ├── emcolors_for_mysql.sql
-│   └── dicionario_dados.html
-│
-├── levantamento/
-│   ├── levantamento.md
-│   ├── entrevista.jpg
-│   └── visita_emcolors.jpg
-│
-└── apresentacao/
-    ├── apresentacao_final.pptx
-    └── apresentacao_final.pdf
-```
-
-A estrutura acima representa a organização recomendada para a entrega final. Os arquivos devem ser adicionados ao repositório antes que seus respectivos links sejam considerados definitivos.
-
-## 16.3 Histórico de Desenvolvimento
+## 16.2 Histórico de Desenvolvimento
 
 O desenvolvimento do projeto deve ser documentado por meio de commits realizados ao longo das etapas de trabalho.
 
@@ -724,11 +751,11 @@ A pesquisa de campo realizada na EMColors possibilitou identificar detalhes impo
 
 A partir dessas informações, foi desenvolvido um modelo conceitual voltado à organização dos dados da gráfica, com foco em dois problemas principais: a dificuldade de controle do estoque e a ausência de histórico permanente de clientes.
 
-Na segunda etapa, o projeto evolui para a estrutura relacional e sua implementação em MySQL, utilizando tabelas específicas, chaves primárias, chaves estrangeiras e restrições de integridade. A organização das informações busca reduzir redundâncias, manter a consistência dos registros e permitir consultas que apoiem o acompanhamento da operação.
+Na segunda etapa, o projeto evoluiu para a estrutura relacional e sua implementação em MySQL, utilizando tabelas específicas, chaves primárias, chaves estrangeiras, restrições de integridade, triggers e views. O banco impede a aprovação de pedidos sem produtos, com produto sem insumo ou com insumo sem estoque, e mantém os clientes e seus pedidos para consulta posterior. A organização das informações busca reduzir redundâncias, manter a consistência dos registros e permitir consultas que apoiem o acompanhamento da operação.
 
-A implementação também apresenta possibilidades de evolução para análises gerenciais, permitindo acompanhar pedidos, produtos, clientes e quantidades de insumos. Com o amadurecimento da base de dados, essas informações poderão apoiar relatórios, indicadores e futuras aplicações de Business Intelligence e Inteligência Artificial.
+O script traz 26 consultas de relatórios e verificações, que permitem acompanhar pedidos, produtos, clientes e quantidades de insumos. Com o amadurecimento da base de dados, essas informações poderão apoiar relatórios, indicadores e futuras aplicações de Business Intelligence e Inteligência Artificial.
 
-Como evolução do projeto, destacam-se a revisão da compatibilidade entre o modelo conceitual e o SQL, a ampliação da massa de dados, a implementação das consultas gerenciais e de auditoria e a atualização do dicionário de dados.
+Como evolução do projeto, o modelo pode passar a registrar entradas e saídas de estoque, a quantidade de insumo usada em cada produto e os funcionários responsáveis pela produção e pela entrega de cada pedido.
 
 Dessa forma, o projeto busca transformar necessidades identificadas na rotina da EMColors em uma estrutura organizada de informações, capaz de apoiar a gestão e contribuir para decisões mais consistentes.
 
