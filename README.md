@@ -707,7 +707,7 @@ A documentação do uso de IA é mantida para registrar as ferramentas utilizada
 |---|---|
 | Ferramenta e etapa | ChatGPT, utilizado como apoio à análise do repositório GitHub, comparação com os requisitos da Entrega 2 e organização da documentação técnica. |
 | Motivação | Identificar os conteúdos que precisavam ser complementados no relatório e analisar a compatibilidade entre o modelo conceitual, a implementação SQL e as exigências da entrega. |
-| Prompts utilizados | "Analise esses dois trabalhos, e me pontue o que eu preciso adicionar no meu que é o do GitHub." Em seguida: "Faça as partes que você consegue fazer com esses documentos que já tem, para eu alterar no README do GitHub." Também foi solicitado um README completo, preservando as partes corretas e incorporando as alterações sugeridas. |
+| Prompts utilizados | "Analise esses dois arquivos, e me pontue o que eu preciso adicionar no meu trabalho." |
 | Resposta recebida | Foram propostas complementações para conversão do modelo lógico, chaves primárias e estrangeiras, normalização, justificativas técnicas, indicadores gerenciais, rastreabilidade e organização do repositório. |
 | Fontes consultadas e verificadas | Repositório GitHub do projeto EMColors, script SQL existente e documento de orientação da Entrega 2. |
 | Trechos rejeitados ou corrigidos | As sugestões que não estavam comprovadas pelos documentos foram identificadas como pendências, especialmente as divergências entre o DER e o SQL, além das informações de entrevista que precisam ser complementadas pelo grupo. |
