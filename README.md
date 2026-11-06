@@ -6,7 +6,7 @@
 
 | Nome completo | RGM | Usuário do GitHub |
 |---|---|---|
-| Diogo Mariano França da Silva | A preencher | A preencher |
+| Diogo Mariano França da Silva | 46875336 | Diogocopd  |
 | Gabriel Rocha de Melo | 47687479 | bielg3r |
 | Matheus Fernando Garcia de Oliveira | 46864075 | MatheusFernando2007 |
 
