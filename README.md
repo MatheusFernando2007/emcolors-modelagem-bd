@@ -1,4 +1,5 @@
 # EMColors — Modelagem e Implementação de Banco de Dados
+https://youtu.be/n-cc9KNv9PM?is=KC4YSATMIqmq-Ust
 
 **Projeto acadêmico — Entrega 2: Modelo Lógico, Implementação SQL e Apresentação Final**
 
